@@ -234,6 +234,62 @@ func generateMetrics() string {
 		),
 	)
 
+	// Server information
+	sb.WriteString("# HELP speedtest_server_id Server ID\n")
+	sb.WriteString("# TYPE speedtest_server_id gauge\n")
+	sb.WriteString(fmt.Sprintf("speedtest_server_id %d\n", latestResult.Server.ID))
+
+	sb.WriteString("# HELP speedtest_server_port Server port\n")
+	sb.WriteString("# TYPE speedtest_server_port gauge\n")
+	sb.WriteString(fmt.Sprintf("speedtest_server_port %d\n", latestResult.Server.Port))
+
+	// Server information as labels
+	sb.WriteString("# HELP speedtest_server_info Metadata about the test server\n")
+	sb.WriteString("# TYPE speedtest_server_info gauge\n")
+	sb.WriteString(fmt.Sprintf(
+		`speedtest_server_info{`+
+			`id="%d",`+
+			`name="%s",`+
+			`location="%s",`+
+			`country="%s",`+
+			`host="%s",`+
+			`ip="%s"`+
+			`} 1`+"\n",
+		latestResult.Server.ID,
+		latestResult.Server.Name,
+		latestResult.Server.Location,
+		latestResult.Server.Country,
+		latestResult.Server.Host,
+		latestResult.Server.IP,
+	))
+
+	// ISP information
+	sb.WriteString("# HELP speedtest_isp_info ISP information\n")
+	sb.WriteString("# TYPE speedtest_isp_info gauge\n")
+	sb.WriteString(fmt.Sprintf("speedtest_isp_info{isp=\"%s\"} 1\n", latestResult.ISP))
+
+	// Interface information
+	sb.WriteString("# HELP speedtest_interface_info Network interface information\n")
+	sb.WriteString("# TYPE speedtest_interface_info gauge\n")
+	interfaceLabels := fmt.Sprintf(
+		`{internal_ip="%s",name="%s",mac_addr="%s",is_vpn="%t",external_ip="%s"}`,
+		latestResult.Interface.InternalIP,
+		latestResult.Interface.Name,
+		latestResult.Interface.MacAddr,
+		latestResult.Interface.IsVPN,
+		latestResult.Interface.ExternalIP,
+	)
+	sb.WriteString(fmt.Sprintf("speedtest_interface_info%s 1\n", interfaceLabels))
+
+	// Is VPN as dedicated metric for easier filtering
+	sb.WriteString("# HELP speedtest_interface_is_vpn Whether the connection is through a VPN\n")
+	sb.WriteString("# TYPE speedtest_interface_is_vpn gauge\n")
+	vpnValue := 0
+	if latestResult.Interface.IsVPN {
+		vpnValue = 1
+	}
+	sb.WriteString(fmt.Sprintf("speedtest_interface_is_vpn %d\n", vpnValue))
+
 	return sb.String()
 }
 
