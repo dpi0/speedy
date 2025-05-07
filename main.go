@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 type SpeedTestResult struct {
@@ -301,13 +304,23 @@ func main() {
 		log.Printf("Initial speedtest failed: %v", err)
 	}
 
-	ticker := time.NewTicker(2 * time.Minute)
-	go func() {
-		for range ticker.C {
-			log.Println("Running scheduled speedtest...")
-			runSpeedTest()
+	// Read cron expression from env
+	cronExpr := os.Getenv("SPEEDTEST_CRON")
+	if cronExpr == "" {
+		log.Fatal("SPEEDTEST_CRON env variable not set")
+	}
+
+	c := cron.New()
+	_, err = c.AddFunc(cronExpr, func() {
+		log.Println("Running scheduled speedtest (cron)...")
+		if err := runSpeedTest(); err != nil {
+			log.Printf("Scheduled speedtest failed: %v", err)
 		}
-	}()
+	})
+	if err != nil {
+		log.Fatalf("Invalid cron expression: %v", err)
+	}
+	c.Start()
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
