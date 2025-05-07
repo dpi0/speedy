@@ -81,7 +81,12 @@ var (
 
 func runSpeedTest() error {
 	log.Println("Starting speedtest...")
-	cmd := exec.Command("./cli/speedtest", "--accept-license", "--accept-gdpr", "--format=json")
+	cmd := exec.Command(
+		"/usr/local/bin/speedtest",
+		"--accept-license",
+		"--accept-gdpr",
+		"--format=json",
+	)
 	output, err := cmd.Output()
 
 	if err != nil {
